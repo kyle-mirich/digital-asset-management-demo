@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Asset } from '@/types/asset'
+import { Asset, AssetUpdate, AssetStatus, STATUS_CONFIG } from '@/types/asset'
 import { supabase } from '@/lib/supabase'
+import TagAutocomplete from './TagAutocomplete'
 
 interface AssetEditorProps {
   asset: Asset
@@ -13,25 +14,30 @@ interface AssetEditorProps {
 export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEditorProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AssetUpdate & { filename: string }>({
     filename: asset.filename,
     campaign: asset.campaign || '',
-    tags: asset.tags?.join(', ') || '',
+    tags: asset.tags || [],
+    status: asset.status,
+    qc_passed: asset.qc_passed,
     notes: asset.notes || ''
   })
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof typeof formData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const updatedData = {
-        filename: formData.filename,
-        campaign: formData.campaign || null,
-        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [],
-        notes: formData.notes || null
+      const updatedData: any = {
+        filename: formData.filename.trim(),
+        campaign: formData.campaign?.trim() || null,
+        tags: formData.tags,
+        status: formData.status,
+        qc_passed: formData.qc_passed,
+        notes: formData.notes?.trim() || null
       }
 
       const { data, error } = await supabase
@@ -43,6 +49,7 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
 
       if (error) {
         console.error('Error updating asset:', error)
+        alert('Failed to update asset. Please try again.')
         return
       }
 
@@ -50,6 +57,7 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
       setIsEditing(false)
     } catch (error) {
       console.error('Error saving asset:', error)
+      alert('Failed to update asset. Please try again.')
     } finally {
       setIsSaving(false)
     }
@@ -59,7 +67,9 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
     setFormData({
       filename: asset.filename,
       campaign: asset.campaign || '',
-      tags: asset.tags?.join(', ') || '',
+      tags: asset.tags || [],
+      status: asset.status,
+      qc_passed: asset.qc_passed,
       notes: asset.notes || ''
     })
     setIsEditing(false)
@@ -90,6 +100,29 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Filename</label>
             <p className="text-sm text-gray-900 bg-gray-50 rounded-lg p-3">{asset.filename}</p>
+            {asset.original_filename && asset.original_filename !== asset.filename && (
+              <p className="text-xs text-gray-500 mt-1">Original: {asset.original_filename}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <span className={`
+              inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+              ${STATUS_CONFIG[asset.status].color}
+            `}>
+              {STATUS_CONFIG[asset.status].label}
+            </span>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Quality Control</label>
+            <span className={`
+              inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+              ${asset.qc_passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+            `}>
+              {asset.qc_passed ? '✅ Passed' : '❌ Not Passed'}
+            </span>
           </div>
 
           {asset.campaign && (
@@ -219,26 +252,90 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
 
         {/* Tags */}
         <div>
-          <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
-            Tags (comma separated)
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Tags
           </label>
-          <input
-            id="tags"
-            type="text"
+          <TagAutocomplete
             value={formData.tags}
-            onChange={(e) => handleInputChange('tags', e.target.value)}
-            className="
-              w-full px-4 py-3 rounded-lg border border-gray-300 
-              focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-              transition-all duration-200
-              hover:border-gray-400
-              text-gray-900 bg-white
-            "
-            placeholder="e.g., outdoor, lifestyle, product, summer..."
+            onChange={(tags) => handleInputChange('tags', tags)}
+            placeholder="Add tags to organize your assets..."
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Separate tags with commas. They will be used for filtering and search.
-          </p>
+        </div>
+
+        {/* Status */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Status
+          </label>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+              className="
+                w-full px-4 py-3 rounded-lg border border-gray-300 
+                focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                transition-all duration-200 hover:border-gray-400
+                text-gray-900 bg-white text-left flex items-center justify-between
+              "
+            >
+              <span className={`
+                inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                ${STATUS_CONFIG[formData.status].color}
+              `}>
+                {STATUS_CONFIG[formData.status].label}
+              </span>
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {showStatusDropdown && (
+              <div className="
+                absolute top-full left-0 right-0 mt-1 
+                bg-white border border-gray-300 rounded-lg shadow-lg z-10
+              ">
+                {Object.entries(STATUS_CONFIG).map(([status, config]) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => {
+                      handleInputChange('status', status as AssetStatus)
+                      setShowStatusDropdown(false)
+                    }}
+                    className="
+                      w-full text-left px-4 py-3 hover:bg-gray-50
+                      transition-colors duration-200 flex items-center space-x-3
+                    "
+                  >
+                    <span className={`
+                      inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                      ${config.color}
+                    `}>
+                      {config.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* QC Status */}
+        <div>
+          <label className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              checked={formData.qc_passed}
+              onChange={(e) => handleInputChange('qc_passed', e.target.checked)}
+              className="
+                w-5 h-5 text-blue-600 border-gray-300 rounded
+                focus:ring-blue-500 focus:ring-2
+              "
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Quality Control Passed
+            </span>
+          </label>
         </div>
 
         {/* Notes */}
@@ -263,30 +360,6 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
           />
         </div>
 
-        {/* Preview Tags */}
-        {formData.tags && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Tag Preview</label>
-            <div className="flex flex-wrap gap-2">
-              {formData.tags.split(',').map((tag, index) => {
-                const trimmedTag = tag.trim()
-                return trimmedTag ? (
-                  <span
-                    key={index}
-                    className="
-                      inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                      bg-blue-100 text-blue-700 border border-blue-200
-                      transition-all duration-200
-                      hover:bg-blue-200
-                    "
-                  >
-                    {trimmedTag}
-                  </span>
-                ) : null
-              })}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

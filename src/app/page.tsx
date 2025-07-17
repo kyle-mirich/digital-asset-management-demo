@@ -8,7 +8,7 @@ import ProductCard from '@/components/ProductCard'
 
 interface FilterState {
   category: ProductCategory | 'all'
-  status: 'draft' | 'active' | 'archived' | 'all'
+  status: 'draft' | 'in_review' | 'approved' | 'archived' | 'all'
   search: string
 }
 
@@ -153,8 +153,12 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          {/* Total Products - Shows all products */}
+          <button
+            onClick={() => setFilters({ category: 'all', status: 'all', search: '' })}
+            className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
+          >
             <div className="flex items-center">
               <div className="p-3 bg-blue-100 rounded-lg">
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,9 +170,13 @@ export default function Home() {
                 <div className="text-sm text-gray-600">Total Products</div>
               </div>
             </div>
-          </div>
+          </button>
           
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
+          {/* Approved Products - Filters to approved status */}
+          <button
+            onClick={() => setFilters({ category: 'all', status: 'approved', search: '' })}
+            className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
+          >
             <div className="flex items-center">
               <div className="p-3 bg-green-100 rounded-lg">
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,14 +185,18 @@ export default function Home() {
               </div>
               <div className="ml-4">
                 <div className="text-2xl font-bold text-gray-900">
-                  {products.filter(p => p.status === 'active').length}
+                  {products.filter(p => p.status === 'approved').length}
                 </div>
-                <div className="text-sm text-gray-600">Active Products</div>
+                <div className="text-sm text-gray-600">Approved Products</div>
               </div>
             </div>
-          </div>
+          </button>
           
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
+          {/* Total Assets - Shows all products (since assets are within products) */}
+          <button
+            onClick={() => setFilters({ category: 'all', status: 'all', search: '' })}
+            className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
+          >
             <div className="flex items-center">
               <div className="p-3 bg-yellow-100 rounded-lg">
                 <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,11 +206,13 @@ export default function Home() {
               <div className="ml-4">
                 <div className="text-2xl font-bold text-gray-900">{totalAssets}</div>
                 <div className="text-sm text-gray-600">Total Assets</div>
+                <div className="text-xs text-gray-500 mt-1">Click to view all products</div>
               </div>
             </div>
-          </div>
+          </button>
           
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
+          {/* Categories - Shows category breakdown */}
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 relative group">
             <div className="flex items-center">
               <div className="p-3 bg-purple-100 rounded-lg">
                 <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -210,9 +224,107 @@ export default function Home() {
                   {Object.keys(PRODUCT_CATEGORIES).length}
                 </div>
                 <div className="text-sm text-gray-600">Categories</div>
+                <div className="text-xs text-gray-500 mt-1">Click category below</div>
+              </div>
+            </div>
+            
+            {/* Category dropdown on hover */}
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div className="p-2">
+                {Object.entries(PRODUCT_CATEGORIES).map(([key, config]) => {
+                  const categoryCount = products.filter(p => p.category === key).length
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setFilters({ category: key as ProductCategory, status: 'all', search: '' })}
+                      className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between"
+                    >
+                      <span className="flex items-center">
+                        <span className="text-lg mr-2">{config.icon}</span>
+                        <span className="text-sm font-medium text-gray-900">{config.label}</span>
+                      </span>
+                      <span className="text-sm text-gray-500">{categoryCount}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Status Breakdown */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {/* Draft Products */}
+          <button
+            onClick={() => setFilters({ category: 'all', status: 'draft', search: '' })}
+            className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-lg font-bold text-gray-900">
+                  {products.filter(p => p.status === 'draft').length}
+                </div>
+                <div className="text-sm text-gray-600">📝 Draft</div>
+              </div>
+              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                <span className="text-lg">📝</span>
+              </div>
+            </div>
+          </button>
+
+          {/* In Review Products */}
+          <button
+            onClick={() => setFilters({ category: 'all', status: 'in_review', search: '' })}
+            className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-lg font-bold text-gray-900">
+                  {products.filter(p => p.status === 'in_review').length}
+                </div>
+                <div className="text-sm text-gray-600">🔍 In Review</div>
+              </div>
+              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <span className="text-lg">🔍</span>
+              </div>
+            </div>
+          </button>
+
+          {/* Approved Products */}
+          <button
+            onClick={() => setFilters({ category: 'all', status: 'approved', search: '' })}
+            className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-lg font-bold text-gray-900">
+                  {products.filter(p => p.status === 'approved').length}
+                </div>
+                <div className="text-sm text-gray-600">✅ Approved</div>
+              </div>
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <span className="text-lg">✅</span>
+              </div>
+            </div>
+          </button>
+
+          {/* Archived Products */}
+          <button
+            onClick={() => setFilters({ category: 'all', status: 'archived', search: '' })}
+            className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-lg font-bold text-gray-900">
+                  {products.filter(p => p.status === 'archived').length}
+                </div>
+                <div className="text-sm text-gray-600">📦 Archived</div>
+              </div>
+              <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                <span className="text-lg">📦</span>
+              </div>
+            </div>
+          </button>
         </div>
 
         {/* Filters */}
@@ -228,7 +340,7 @@ export default function Home() {
                   id="category"
                   value={filters.category}
                   onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value as ProductCategory | 'all' }))}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 bg-white"
                 >
                   <option value="all">All Categories</option>
                   {Object.entries(PRODUCT_CATEGORIES).map(([key, config]) => (
@@ -248,12 +360,13 @@ export default function Home() {
                   id="status"
                   value={filters.status}
                   onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value as any }))}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 bg-white"
                 >
                   <option value="all">All Statuses</option>
-                  <option value="draft">Draft</option>
-                  <option value="active">Active</option>
-                  <option value="archived">Archived</option>
+                  <option value="draft">📝 Draft</option>
+                  <option value="in_review">🔍 In Review</option>
+                  <option value="approved">✅ Approved</option>
+                  <option value="archived">📦 Archived</option>
                 </select>
               </div>
 
@@ -268,7 +381,7 @@ export default function Home() {
                   value={filters.search}
                   onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                   placeholder="Search products..."
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 bg-white placeholder-gray-500"
                 />
               </div>
             </div>

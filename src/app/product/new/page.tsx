@@ -174,7 +174,7 @@ export default function NewProductPage() {
               <p className="text-sm text-gray-600">Set the initial status for this product</p>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <label className={`
                 relative flex flex-col items-center p-4 rounded-lg border-2 cursor-pointer
                 transition-all duration-200 hover:scale-105
@@ -199,7 +199,28 @@ export default function NewProductPage() {
               <label className={`
                 relative flex flex-col items-center p-4 rounded-lg border-2 cursor-pointer
                 transition-all duration-200 hover:scale-105
-                ${formData.status === 'active'
+                ${formData.status === 'in_review'
+                  ? 'border-yellow-500 bg-yellow-50 text-yellow-700'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                }
+              `}>
+                <input
+                  type="radio"
+                  name="status"
+                  value="in_review"
+                  checked={formData.status === 'in_review'}
+                  onChange={(e) => handleInputChange('status', e.target.value as any)}
+                  className="sr-only"
+                />
+                <div className="text-2xl mb-2">🔍</div>
+                <div className="text-sm font-medium">In Review</div>
+                <div className="text-xs text-gray-500 text-center mt-1">Under review</div>
+              </label>
+
+              <label className={`
+                relative flex flex-col items-center p-4 rounded-lg border-2 cursor-pointer
+                transition-all duration-200 hover:scale-105
+                ${formData.status === 'approved'
                   ? 'border-green-500 bg-green-50 text-green-700'
                   : 'border-gray-200 hover:border-gray-300 text-gray-700'
                 }
@@ -207,13 +228,13 @@ export default function NewProductPage() {
                 <input
                   type="radio"
                   name="status"
-                  value="active"
-                  checked={formData.status === 'active'}
+                  value="approved"
+                  checked={formData.status === 'approved'}
                   onChange={(e) => handleInputChange('status', e.target.value as any)}
                   className="sr-only"
                 />
                 <div className="text-2xl mb-2">✅</div>
-                <div className="text-sm font-medium">Active</div>
+                <div className="text-sm font-medium">Approved</div>
                 <div className="text-xs text-gray-500 text-center mt-1">Ready for production</div>
               </label>
 
@@ -307,11 +328,13 @@ export default function NewProductPage() {
                   <span className={`
                     inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
                     ${formData.status === 'draft' ? 'bg-gray-100 text-gray-800' : ''}
-                    ${formData.status === 'active' ? 'bg-green-100 text-green-800' : ''}
+                    ${formData.status === 'in_review' ? 'bg-yellow-100 text-yellow-800' : ''}
+                    ${formData.status === 'approved' ? 'bg-green-100 text-green-800' : ''}
                     ${formData.status === 'archived' ? 'bg-slate-100 text-slate-600' : ''}
                   `}>
                     {formData.status === 'draft' && 'Draft'}
-                    {formData.status === 'active' && 'Active'}
+                    {formData.status === 'in_review' && 'In Review'}
+                    {formData.status === 'approved' && 'Approved'}
                     {formData.status === 'archived' && 'Archived'}
                   </span>
                 </div>

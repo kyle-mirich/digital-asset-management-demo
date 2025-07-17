@@ -3,6 +3,7 @@ export type AssetStatus = 'draft' | 'in_review' | 'approved' | 'archived'
 export interface Asset {
   id: string
   filename: string
+  original_filename?: string
   file_url: string
   filetype: string
   filesize: number

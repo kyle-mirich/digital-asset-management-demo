@@ -1,5 +1,5 @@
 export type ProductCategory = 'shirt' | 'pants' | 'shorts' | 'tank' | 'jacket' | 'hoodie' | 'accessories' | 'other'
-export type ProductStatus = 'draft' | 'active' | 'archived'
+export type ProductStatus = 'draft' | 'in_review' | 'approved' | 'archived'
 
 export interface Product {
   id: string
@@ -39,9 +39,10 @@ export interface ProductWithAssets extends Product {
 
 // Product workflow transitions
 export const PRODUCT_STATUS_TRANSITIONS: Record<ProductStatus, ProductStatus[]> = {
-  draft: ['active'],
-  active: ['archived'],
-  archived: ['active']
+  draft: ['in_review'],
+  in_review: ['approved', 'draft'],
+  approved: ['archived'],
+  archived: ['draft']
 }
 
 // Product status colors and labels
@@ -51,8 +52,13 @@ export const PRODUCT_STATUS_CONFIG = {
     color: 'bg-gray-100 text-gray-800 border-gray-200',
     hoverColor: 'hover:bg-gray-200'
   },
-  active: {
-    label: 'Active',
+  in_review: {
+    label: 'In Review',
+    color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    hoverColor: 'hover:bg-yellow-200'
+  },
+  approved: {
+    label: 'Approved',
     color: 'bg-green-100 text-green-800 border-green-200',
     hoverColor: 'hover:bg-green-200'
   },
@@ -100,3 +106,37 @@ export const PRODUCT_CATEGORIES: Record<ProductCategory, { label: string; icon: 
 } as const
 
 export type ProductCategoryConfig = typeof PRODUCT_CATEGORIES
+
+// Checklist types
+export interface ChecklistItem {
+  id: string
+  title: string
+  description?: string
+  is_completed: boolean
+  is_required: boolean
+  order_index: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ProductChecklistItem extends ChecklistItem {
+  product_id: string
+}
+
+export interface AssetChecklistItem extends ChecklistItem {
+  asset_id: string
+}
+
+// Tag types
+export interface Tag {
+  id: string
+  name: string
+  usage_count: number
+  created_at: string
+}
+
+export interface TagSuggestion {
+  id: string
+  name: string
+  usage_count: number
+}

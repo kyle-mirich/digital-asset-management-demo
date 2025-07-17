@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { supabase } from '@/lib/supabase'
-import { Product, PRODUCT_STATUS_CONFIG, PRODUCT_CATEGORIES } from '@/types/product'
+import { Product, PRODUCT_STATUS_CONFIG, PRODUCT_CATEGORIES, ProductStatus, PRODUCT_STATUS_TRANSITIONS } from '@/types/product'
 import { Asset } from '@/types/asset'
 import AssetCard from '@/components/AssetCard'
+import ProductChecklist from '@/components/ProductChecklist'
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -16,12 +17,29 @@ export default function ProductDetailPage() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (params.id) {
       fetchProduct(params.id as string)
     }
   }, [params.id])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowStatusDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const fetchProduct = async (productId: string) => {
     try {
@@ -79,6 +97,37 @@ export default function ProductDetailPage() {
       ))
     } catch (error) {
       console.error('Error updating status:', error)
+    }
+  }
+
+  const handleProductStatusChange = async (newStatus: ProductStatus) => {
+    if (!product) return
+    
+    setIsUpdatingStatus(true)
+    try {
+      console.log(`Updating product ${product.id} from ${product.status} to ${newStatus}`)
+      
+      const { data, error } = await supabase
+        .from('products')
+        .update({ status: newStatus })
+        .eq('id', product.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Supabase error updating product status:', error)
+        alert(`Failed to update product status: ${error.message}`)
+        return
+      }
+
+      console.log('Product status updated successfully:', data)
+      setProduct(data)
+      setShowStatusDropdown(false)
+    } catch (error) {
+      console.error('Error updating product status:', error)
+      alert(`Failed to update product status: ${error}`)
+    } finally {
+      setIsUpdatingStatus(false)
     }
   }
 
@@ -156,12 +205,74 @@ export default function ProductDetailPage() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <span className={`
-                inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                ${statusConfig.color}
-              `}>
-                {statusConfig.label}
-              </span>
+              {/* Status Dropdown */}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                  disabled={isUpdatingStatus}
+                  className={`
+                    inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                    ${statusConfig.color} ${statusConfig.hoverColor}
+                    transition-all duration-200 cursor-pointer
+                    ${isUpdatingStatus ? 'opacity-50 cursor-not-allowed' : ''}
+                  `}
+                >
+                  {isUpdatingStatus ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border border-current border-t-transparent mr-2"></div>
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      {statusConfig.label}
+                      <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+
+                {showStatusDropdown && !isUpdatingStatus && (
+                  <div className="
+                    absolute top-full left-0 mt-1 w-48
+                    bg-white border border-gray-300 rounded-lg shadow-lg z-50
+                  ">
+                    <div className="py-1">
+                      {Object.entries(PRODUCT_STATUS_CONFIG).map(([status, config]) => {
+                        // For now, allow all transitions to fix any status issues
+                        const canTransition = true // We'll make this more restrictive later if needed
+                        
+                        return (
+                          <button
+                            key={status}
+                            onClick={() => handleProductStatusChange(status as ProductStatus)}
+                            disabled={false}
+                            className={`
+                              w-full text-left px-4 py-2 transition-colors duration-200
+                              flex items-center justify-between
+                              hover:bg-gray-50 cursor-pointer
+                              ${status === product.status ? 'bg-gray-100' : ''}
+                            `}
+                          >
+                            <span className={`
+                              inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                              ${config.color}
+                            `}>
+                              {config.label}
+                            </span>
+                            {status === product.status && (
+                              <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <Link
                 href={`/product/${product.id}/upload`}
                 className="
@@ -286,6 +397,15 @@ export default function ProductDetailPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Product Checklist */}
+            <ProductChecklist 
+              productId={product.id}
+              onChecklistUpdate={(completedRequired, totalRequired) => {
+                // Optional: You can use this to show progress in UI or trigger actions
+                console.log(`Checklist progress: ${completedRequired}/${totalRequired}`)
+              }}
+            />
+
             {/* Quick Stats */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
