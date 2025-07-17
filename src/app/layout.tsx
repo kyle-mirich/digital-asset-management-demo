@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VuoriFlow - Digital Asset Management",
-  description: "A lightweight Digital Asset Management system for creative workflows - from upload to archival",
+  title: "VuoriFlow - Product Digital Asset Management",
+  description: "A product-oriented Digital Asset Management system for organizing creative assets by product - from upload to archival",
 };
 
 export default function RootLayout({

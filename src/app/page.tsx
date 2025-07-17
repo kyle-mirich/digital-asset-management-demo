@@ -3,118 +3,114 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { Asset, FilterState } from '@/types/asset'
-import AssetCard from '@/components/AssetCard'
-import FilterPanel from '@/components/FilterPanel'
+import { ProductWithAssets, ProductCategory, PRODUCT_CATEGORIES } from '@/types/product'
+import ProductCard from '@/components/ProductCard'
+
+interface FilterState {
+  category: ProductCategory | 'all'
+  status: 'draft' | 'active' | 'archived' | 'all'
+  search: string
+}
 
 export default function Home() {
-  const [assets, setAssets] = useState<Asset[]>([])
-  const [filteredAssets, setFilteredAssets] = useState<Asset[]>([])
+  const [products, setProducts] = useState<ProductWithAssets[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<ProductWithAssets[]>([])
   const [filters, setFilters] = useState<FilterState>({
-    campaign: '',
+    category: 'all',
     status: 'all',
-    tags: [],
     search: ''
   })
   const [isLoading, setIsLoading] = useState(true)
-  const [availableTags, setAvailableTags] = useState<string[]>([])
-  const [availableCampaigns, setAvailableCampaigns] = useState<string[]>([])
+  const [totalAssets, setTotalAssets] = useState(0)
 
-  // Fetch assets from Supabase
+  // Fetch products from Supabase
   useEffect(() => {
-    fetchAssets()
+    fetchProducts()
   }, [])
 
-  // Apply filters whenever filters or assets change
+  // Apply filters whenever filters or products change
   useEffect(() => {
     applyFilters()
-  }, [filters, assets])
+  }, [filters, products])
 
-  const fetchAssets = async () => {
+  const fetchProducts = async () => {
     try {
       setIsLoading(true)
-      const { data, error } = await supabase
-        .from('assets')
+      
+      // First get all products
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Error fetching assets:', error)
+      if (productsError) {
+        console.error('Error fetching products:', productsError)
         return
       }
 
-      setAssets(data || [])
-      
-      // Extract unique tags and campaigns
-      const allTags = new Set<string>()
-      const allCampaigns = new Set<string>()
-      
-      data?.forEach(asset => {
-        asset.tags?.forEach((tag: string) => allTags.add(tag))
-        if (asset.campaign) allCampaigns.add(asset.campaign)
-      })
-      
-      setAvailableTags(Array.from(allTags))
-      setAvailableCampaigns(Array.from(allCampaigns))
+      // Then get asset counts for each product and sample assets for thumbnails
+      const productsWithAssets = await Promise.all(
+        (productsData || []).map(async (product) => {
+          // Get asset count
+          const { count } = await supabase
+            .from('assets')
+            .select('*', { count: 'exact', head: true })
+            .eq('product_id', product.id)
+
+          // Get first few assets for thumbnails
+          const { data: assets } = await supabase
+            .from('assets')
+            .select('id, filename, file_url, filetype, status')
+            .eq('product_id', product.id)
+            .order('created_at', { ascending: false })
+            .limit(3)
+
+          return {
+            ...product,
+            asset_count: count || 0,
+            assets: assets || []
+          }
+        })
+      )
+
+      // Get total asset count across all products
+      const { count: totalAssetCount } = await supabase
+        .from('assets')
+        .select('*', { count: 'exact', head: true })
+
+      setProducts(productsWithAssets)
+      setTotalAssets(totalAssetCount || 0)
     } catch (error) {
-      console.error('Error fetching assets:', error)
+      console.error('Error fetching products:', error)
     } finally {
       setIsLoading(false)
     }
   }
 
   const applyFilters = () => {
-    let filtered = [...assets]
+    let filtered = [...products]
+
+    // Category filter
+    if (filters.category !== 'all') {
+      filtered = filtered.filter(product => product.category === filters.category)
+    }
 
     // Status filter
     if (filters.status !== 'all') {
-      filtered = filtered.filter(asset => asset.status === filters.status)
-    }
-
-    // Campaign filter
-    if (filters.campaign) {
-      filtered = filtered.filter(asset => asset.campaign === filters.campaign)
-    }
-
-    // Tags filter
-    if (filters.tags.length > 0) {
-      filtered = filtered.filter(asset => 
-        filters.tags.some(tag => asset.tags?.includes(tag))
-      )
+      filtered = filtered.filter(product => product.status === filters.status)
     }
 
     // Search filter
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase()
-      filtered = filtered.filter(asset => 
-        asset.filename.toLowerCase().includes(searchTerm) ||
-        asset.notes?.toLowerCase().includes(searchTerm) ||
-        asset.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
+      filtered = filtered.filter(product => 
+        product.name.toLowerCase().includes(searchTerm) ||
+        product.description?.toLowerCase().includes(searchTerm) ||
+        product.category.toLowerCase().includes(searchTerm)
       )
     }
 
-    setFilteredAssets(filtered)
-  }
-
-  const handleStatusChange = async (assetId: string, newStatus: Asset['status']) => {
-    try {
-      const { error } = await supabase
-        .from('assets')
-        .update({ status: newStatus })
-        .eq('id', assetId)
-
-      if (error) {
-        console.error('Error updating status:', error)
-        return
-      }
-
-      // Update local state
-      setAssets(prev => prev.map(asset => 
-        asset.id === assetId ? { ...asset, status: newStatus } : asset
-      ))
-    } catch (error) {
-      console.error('Error updating status:', error)
-    }
+    setFilteredProducts(filtered)
   }
 
   return (
@@ -136,7 +132,7 @@ export default function Home() {
             </div>
             <div className="flex items-center space-x-4">
               <Link
-                href="/upload"
+                href="/product/new"
                 className="
                   inline-flex items-center px-4 py-2 rounded-lg
                   bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium
@@ -148,7 +144,7 @@ export default function Home() {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                Upload Assets
+                New Product
               </Link>
             </div>
           </div>
@@ -162,12 +158,12 @@ export default function Home() {
             <div className="flex items-center">
               <div className="p-3 bg-blue-100 rounded-lg">
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
               </div>
               <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">{assets.length}</div>
-                <div className="text-sm text-gray-600">Total Assets</div>
+                <div className="text-2xl font-bold text-gray-900">{products.length}</div>
+                <div className="text-sm text-gray-600">Total Products</div>
               </div>
             </div>
           </div>
@@ -181,9 +177,9 @@ export default function Home() {
               </div>
               <div className="ml-4">
                 <div className="text-2xl font-bold text-gray-900">
-                  {assets.filter(a => a.status === 'approved').length}
+                  {products.filter(p => p.status === 'active').length}
                 </div>
-                <div className="text-sm text-gray-600">Approved</div>
+                <div className="text-sm text-gray-600">Active Products</div>
               </div>
             </div>
           </div>
@@ -192,14 +188,12 @@ export default function Home() {
             <div className="flex items-center">
               <div className="p-3 bg-yellow-100 rounded-lg">
                 <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>
               <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">
-                  {assets.filter(a => a.status === 'in_review').length}
-                </div>
-                <div className="text-sm text-gray-600">In Review</div>
+                <div className="text-2xl font-bold text-gray-900">{totalAssets}</div>
+                <div className="text-sm text-gray-600">Total Assets</div>
               </div>
             </div>
           </div>
@@ -212,8 +206,10 @@ export default function Home() {
                 </svg>
               </div>
               <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">{availableTags.length}</div>
-                <div className="text-sm text-gray-600">Tags</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {Object.keys(PRODUCT_CATEGORIES).length}
+                </div>
+                <div className="text-sm text-gray-600">Categories</div>
               </div>
             </div>
           </div>
@@ -221,34 +217,71 @@ export default function Home() {
 
         {/* Filters */}
         <div className="mb-8">
-          <FilterPanel
-            filters={filters}
-            onFilterChange={setFilters}
-            availableTags={availableTags}
-            availableCampaigns={availableCampaigns}
-            isLoading={isLoading}
-          />
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Category Filter */}
+              <div>
+                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                  Category
+                </label>
+                <select
+                  id="category"
+                  value={filters.category}
+                  onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value as ProductCategory | 'all' }))}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                >
+                  <option value="all">All Categories</option>
+                  {Object.entries(PRODUCT_CATEGORIES).map(([key, config]) => (
+                    <option key={key} value={key}>
+                      {config.icon} {config.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                  Status
+                </label>
+                <select
+                  id="status"
+                  value={filters.status}
+                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value as any }))}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="draft">Draft</option>
+                  <option value="active">Active</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+
+              {/* Search */}
+              <div>
+                <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
+                  Search
+                </label>
+                <input
+                  id="search"
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                  placeholder="Search products..."
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Assets Grid */}
+        {/* Products Grid */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">
-              {filteredAssets.length} Assets
-              {filters.status !== 'all' || filters.campaign || filters.tags.length > 0 || filters.search ? ' (filtered)' : ''}
+              {filteredProducts.length} Products
+              {filters.status !== 'all' || filters.category !== 'all' || filters.search ? ' (filtered)' : ''}
             </h2>
-            <div className="flex items-center space-x-2">
-              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                </svg>
-              </button>
-              <button className="p-2 text-gray-600 bg-gray-100 rounded-lg">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-              </button>
-            </div>
           </div>
         </div>
 
@@ -260,17 +293,17 @@ export default function Home() {
         )}
 
         {/* Empty State */}
-        {!isLoading && assets.length === 0 && (
+        {!isLoading && products.length === 0 && (
           <div className="text-center py-12">
             <div className="mb-4">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No assets yet</h3>
-            <p className="text-gray-500 mb-4">Get started by uploading your first asset</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No products yet</h3>
+            <p className="text-gray-500 mb-4">Get started by creating your first product</p>
             <Link
-              href="/upload"
+              href="/product/new"
               className="
                 inline-flex items-center px-4 py-2 rounded-lg
                 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium
@@ -282,23 +315,23 @@ export default function Home() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              Upload First Asset
+              Create First Product
             </Link>
           </div>
         )}
 
         {/* No Results State */}
-        {!isLoading && assets.length > 0 && filteredAssets.length === 0 && (
+        {!isLoading && products.length > 0 && filteredProducts.length === 0 && (
           <div className="text-center py-12">
             <div className="mb-4">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No assets found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
             <p className="text-gray-500 mb-4">Try adjusting your filters or search terms</p>
             <button
-              onClick={() => setFilters({ campaign: '', status: 'all', tags: [], search: '' })}
+              onClick={() => setFilters({ category: 'all', status: 'all', search: '' })}
               className="
                 inline-flex items-center px-4 py-2 rounded-lg
                 bg-gray-100 text-gray-700 hover:bg-gray-200
@@ -310,14 +343,13 @@ export default function Home() {
           </div>
         )}
 
-        {/* Assets Grid */}
-        {!isLoading && filteredAssets.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredAssets.map((asset, index) => (
-              <AssetCard
-                key={asset.id}
-                asset={asset}
-                onStatusChange={handleStatusChange}
+        {/* Products Grid */}
+        {!isLoading && filteredProducts.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProducts.map((product, index) => (
+              <ProductCard
+                key={product.id}
+                product={product}
                 priority={index < 4}
               />
             ))}

@@ -9,6 +9,7 @@ export interface Asset {
   upload_time: string
   status: AssetStatus
   uploader_id: string
+  product_id?: string
   campaign?: string
   tags: string[]
   qc_passed: boolean
@@ -21,12 +22,14 @@ export interface AssetUpload {
   filename: string
   filetype: string
   filesize: number
+  product_id?: string
   campaign?: string
   tags: string[]
   notes?: string
 }
 
 export interface AssetUpdate {
+  product_id?: string
   campaign?: string
   tags?: string[]
   status?: AssetStatus
@@ -51,8 +54,11 @@ export interface FilterState {
 export interface UploadProgress {
   filename: string
   progress: number
-  status: 'uploading' | 'processing' | 'complete' | 'error'
+  status: 'pending' | 'uploading' | 'processing' | 'complete' | 'error'
   error?: string
+  file?: File
+  previewUrl?: string
+  assetId?: string
 }
 
 // Status workflow transitions
