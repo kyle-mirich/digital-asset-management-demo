@@ -214,16 +214,16 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Overview Stats - Compact */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-2 mb-4">
           <button
             onClick={() => setFilters({ category: 'all', gender: 'all', status: 'all', search: '' })}
-            className="group bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 text-left w-full relative overflow-hidden"
+            className="group bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-gray-200/50 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 text-left w-full relative overflow-hidden"
           >
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-1">
-                <div className="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">{products.length}</div>
-                <div className="p-1.5 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors duration-300">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">{products.length}</div>
+                <div className="p-1 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors duration-300">
+                  <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
                 </div>
@@ -235,15 +235,15 @@ export default function Home() {
           
           <button
             onClick={() => setFilters({ category: 'all', status: 'approved', search: '' })}
-            className="group bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 text-left w-full relative overflow-hidden"
+            className="group bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-gray-200/50 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 text-left w-full relative overflow-hidden"
           >
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-1">
-                <div className="text-2xl font-bold text-green-600 group-hover:text-green-700 transition-colors duration-300">
+                <div className="text-xl font-bold text-green-600 group-hover:text-green-700 transition-colors duration-300">
                   {products.filter(p => p.status === 'approved').length}
                 </div>
-                <div className="p-1.5 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors duration-300">
-                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="p-1 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors duration-300">
+                  <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -255,13 +255,13 @@ export default function Home() {
           
           <Link
             href="/assets"
-            className="group bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 text-left w-full relative overflow-hidden block"
+            className="group bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-gray-200/50 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 text-left w-full relative overflow-hidden block"
           >
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-1">
-                <div className="text-2xl font-bold text-blue-600 group-hover:text-blue-700 transition-colors duration-300">{totalAssets}</div>
-                <div className="p-1.5 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors duration-300">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-xl font-bold text-blue-600 group-hover:text-blue-700 transition-colors duration-300">{totalAssets}</div>
+                <div className="p-1 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors duration-300">
+                  <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                 </div>
@@ -270,20 +270,6 @@ export default function Home() {
             </div>
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </Link>
-          
-          <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-1">
-              <div className="text-2xl font-bold text-purple-600">
-                {new Set(products.map(p => p.category)).size}
-              </div>
-              <div className="p-1.5 bg-purple-100 rounded-lg">
-                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                </svg>
-              </div>
-            </div>
-            <div className="text-xs text-gray-600">Categories</div>
-          </div>
         </div>
 
         {/* Compact Filter Bar */}

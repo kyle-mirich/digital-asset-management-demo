@@ -394,18 +394,7 @@ export default function ProductDetailPage() {
                     <p className="text-sm text-gray-900 bg-gray-50 rounded-lg p-3">{product.description}</p>
                   </div>
                 )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Created</label>
-                  <p className="text-sm text-gray-900 bg-gray-50 rounded-lg p-3">
-                    {formatDistanceToNow(new Date(product.created_at), { addSuffix: true })}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Updated</label>
-                  <p className="text-sm text-gray-900 bg-gray-50 rounded-lg p-3">
-                    {formatDistanceToNow(new Date(product.updated_at), { addSuffix: true })}
-                  </p>
-                </div>
+
               </div>
             </div>
 

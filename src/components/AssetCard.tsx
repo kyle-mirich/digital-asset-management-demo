@@ -153,9 +153,7 @@ export default function AssetCard({ asset, onStatusChange, priority = false }: A
           ">
             {asset.filename}
           </h3>
-          <p className="text-sm text-gray-500 mt-1">
-            {formatFileSize(asset.filesize)} • {formatDistanceToNow(new Date(asset.upload_time), { addSuffix: true })}
-          </p>
+
         </div>
 
         {/* Campaign & Gender Category */}

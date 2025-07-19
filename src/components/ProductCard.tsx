@@ -38,7 +38,7 @@ export default function ProductCard({ product, onStatusChange, priority = false 
       className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
     >
       {/* Thumbnail */}
-      <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden">
+      <div className="aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden">
         {thumbnailAsset && isImage ? (
           <>
             <Image
@@ -84,21 +84,21 @@ export default function ProductCard({ product, onStatusChange, priority = false 
       </div>
 
       {/* Content */}
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-3">
+      <div className="p-4">
+        <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors duration-200">
+            <h3 className="text-base font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors duration-200">
               {product.name}
             </h3>
             {product.description && (
-              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+              <p className="text-xs text-gray-600 mt-1 line-clamp-1">
                 {product.description}
               </p>
             )}
           </div>
-          <div className="ml-3">
+          <div className="ml-2">
             <span className={`
-              inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+              inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
               ${statusConfig.color}
             `}>
               {statusConfig.label}
@@ -106,27 +106,19 @@ export default function ProductCard({ product, onStatusChange, priority = false 
           </div>
         </div>
 
-        {/* Meta info */}
-        <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-          <span>
-            Created {formatDistanceToNow(new Date(product.created_at), { addSuffix: true })}
-          </span>
-          <span>
-            Updated {formatDistanceToNow(new Date(product.updated_at), { addSuffix: true })}
-          </span>
-        </div>
+
 
         {/* Actions */}
-        <div className="flex items-center space-x-3">
-          <div className="flex-1 text-center px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium group-hover:from-blue-700 group-hover:to-purple-700 transition-all duration-200 shadow-lg">
+        <div className="flex items-center space-x-2">
+          <div className="flex-1 text-center px-3 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium group-hover:from-blue-700 group-hover:to-purple-700 transition-all duration-200 shadow-lg">
             View Product
           </div>
           <button
             onClick={handleUploadClick}
-            className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200 hover:scale-105"
+            className="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200 hover:scale-105"
             title="Add Assets"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
           </button>
