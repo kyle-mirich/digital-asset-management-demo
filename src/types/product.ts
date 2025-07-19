@@ -1,5 +1,6 @@
-export type ProductCategory = 'shirt' | 'pants' | 'shorts' | 'tank' | 'jacket' | 'hoodie' | 'accessories' | 'other'
+export type ProductCategory = 'activewear' | 'loungewear' | 'tops' | 'bottoms' | 'accessories' | 'other'
 export type ProductStatus = 'draft' | 'in_review' | 'approved' | 'archived'
+export type ProductGender = 'men' | 'women' | 'unisex'
 
 export interface Product {
   id: string
@@ -7,7 +8,8 @@ export interface Product {
   description?: string
   category: ProductCategory
   status: ProductStatus
-  created_by: string
+  gender: ProductGender
+  created_by?: string
   created_at: string
   updated_at: string
 }
@@ -16,6 +18,7 @@ export interface ProductCreate {
   name: string
   description?: string
   category: ProductCategory
+  gender: ProductGender
   status?: ProductStatus
 }
 
@@ -23,6 +26,7 @@ export interface ProductUpdate {
   name?: string
   description?: string
   category?: ProductCategory
+  gender?: ProductGender
   status?: ProductStatus
 }
 
@@ -71,29 +75,21 @@ export const PRODUCT_STATUS_CONFIG = {
 
 // Product category configurations
 export const PRODUCT_CATEGORIES: Record<ProductCategory, { label: string; icon: string }> = {
-  shirt: {
-    label: 'Shirt',
+  activewear: {
+    label: 'Activewear',
+    icon: '🏃‍♂️'
+  },
+  loungewear: {
+    label: 'Loungewear',
+    icon: '🧘‍♀️'
+  },
+  tops: {
+    label: 'Tops',
     icon: '👕'
   },
-  pants: {
-    label: 'Pants',
+  bottoms: {
+    label: 'Bottoms',
     icon: '👖'
-  },
-  shorts: {
-    label: 'Shorts',
-    icon: '🩳'
-  },
-  tank: {
-    label: 'Tank',
-    icon: '🎽'
-  },
-  jacket: {
-    label: 'Jacket',
-    icon: '🧥'
-  },
-  hoodie: {
-    label: 'Hoodie',
-    icon: '👘'
   },
   accessories: {
     label: 'Accessories',
@@ -102,6 +98,22 @@ export const PRODUCT_CATEGORIES: Record<ProductCategory, { label: string; icon: 
   other: {
     label: 'Other',
     icon: '📦'
+  }
+} as const
+
+// Product gender configurations
+export const PRODUCT_GENDERS: Record<ProductGender, { label: string; icon: string }> = {
+  men: {
+    label: 'Men',
+    icon: '👨'
+  },
+  women: {
+    label: 'Women', 
+    icon: '👩'
+  },
+  unisex: {
+    label: 'Unisex',
+    icon: '👤'
   }
 } as const
 

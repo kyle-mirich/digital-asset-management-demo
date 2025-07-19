@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Asset, AssetUpdate, AssetStatus, STATUS_CONFIG } from '@/types/asset'
+import { Asset, AssetUpdate, AssetStatus, STATUS_CONFIG, GenderCategory } from '@/types/asset'
 import { supabase } from '@/lib/supabase'
 import TagAutocomplete from './TagAutocomplete'
 
@@ -20,7 +20,8 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
     tags: asset.tags || [],
     status: asset.status,
     qc_passed: asset.qc_passed,
-    notes: asset.notes || ''
+    notes: asset.notes || '',
+    gender_category: asset.gender_category || 'unisex'
   })
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
 
@@ -37,7 +38,8 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
         tags: formData.tags,
         status: formData.status,
         qc_passed: formData.qc_passed,
-        notes: formData.notes?.trim() || null
+        notes: formData.notes?.trim() || null,
+        gender_category: formData.gender_category
       }
 
       const { data, error } = await supabase
@@ -70,7 +72,8 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
       tags: asset.tags || [],
       status: asset.status,
       qc_passed: asset.qc_passed,
-      notes: asset.notes || ''
+      notes: asset.notes || '',
+      gender_category: asset.gender_category || 'unisex'
     })
     setIsEditing(false)
   }
@@ -122,6 +125,13 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
               ${asset.qc_passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
             `}>
               {asset.qc_passed ? '✅ Passed' : '❌ Not Passed'}
+            </span>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Gender Category</label>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+              {asset.gender_category === 'mens' ? 'Men\'s' : asset.gender_category === 'womens' ? 'Women\'s' : 'Unisex'}
             </span>
           </div>
 
@@ -248,6 +258,29 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
             "
             placeholder="e.g., Spring 2024, Product Launch..."
           />
+        </div>
+
+        {/* Gender Category */}
+        <div>
+          <label htmlFor="gender_category" className="block text-sm font-medium text-gray-700 mb-2">
+            Gender Category
+          </label>
+          <select
+            id="gender_category"
+            value={formData.gender_category}
+            onChange={(e) => handleInputChange('gender_category', e.target.value as GenderCategory)}
+            className="
+              w-full px-4 py-3 rounded-lg border border-gray-300 
+              focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+              transition-all duration-200
+              hover:border-gray-400
+              text-gray-900 bg-white
+            "
+          >
+            <option value="unisex">Unisex</option>
+            <option value="mens">Men's</option>
+            <option value="womens">Women's</option>
+          </select>
         </div>
 
         {/* Tags */}

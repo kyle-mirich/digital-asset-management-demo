@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { ProductCreate, ProductCategory, PRODUCT_CATEGORIES } from '@/types/product'
+import { ProductCreate, ProductCategory, ProductGender, PRODUCT_CATEGORIES, PRODUCT_GENDERS } from '@/types/product'
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -12,7 +12,8 @@ export default function NewProductPage() {
   const [formData, setFormData] = useState<ProductCreate>({
     name: '',
     description: '',
-    category: 'shirt',
+    category: 'tops',
+    gender: 'unisex',
     status: 'draft'
   })
 
@@ -139,7 +140,7 @@ export default function NewProductPage() {
               <p className="text-sm text-gray-600">Choose the product category</p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {Object.entries(PRODUCT_CATEGORIES).map(([key, config]) => (
                 <label
                   key={key}
@@ -158,6 +159,41 @@ export default function NewProductPage() {
                     value={key}
                     checked={formData.category === key}
                     onChange={(e) => handleInputChange('category', e.target.value as ProductCategory)}
+                    className="sr-only"
+                  />
+                  <div className="text-3xl mb-2">{config.icon}</div>
+                  <div className="text-sm font-medium text-center">{config.label}</div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Gender Selection */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Gender</h2>
+              <p className="text-sm text-gray-600">Choose the target gender for this product</p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              {Object.entries(PRODUCT_GENDERS).map(([key, config]) => (
+                <label
+                  key={key}
+                  className={`
+                    relative flex flex-col items-center p-4 rounded-lg border-2 cursor-pointer
+                    transition-all duration-200 hover:scale-105
+                    ${formData.gender === key
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    }
+                  `}
+                >
+                  <input
+                    type="radio"
+                    name="gender"
+                    value={key}
+                    checked={formData.gender === key}
+                    onChange={(e) => handleInputChange('gender', e.target.value as ProductGender)}
                     className="sr-only"
                   />
                   <div className="text-3xl mb-2">{config.icon}</div>
@@ -312,16 +348,25 @@ export default function NewProductPage() {
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
                     <span className="text-2xl">{PRODUCT_CATEGORIES[formData.category].icon}</span>
+                    <span className="text-lg">{PRODUCT_GENDERS[formData.gender].icon}</span>
                     <h4 className="text-lg font-semibold text-gray-900">{formData.name}</h4>
                   </div>
                   {formData.description && (
                     <p className="text-sm text-gray-600 mb-2">{formData.description}</p>
                   )}
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-500">Category:</span>
-                    <span className="text-xs font-medium text-gray-700">
-                      {PRODUCT_CATEGORIES[formData.category].label}
-                    </span>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500">Category:</span>
+                      <span className="text-xs font-medium text-gray-700">
+                        {PRODUCT_CATEGORIES[formData.category].label}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500">Gender:</span>
+                      <span className="text-xs font-medium text-gray-700">
+                        {PRODUCT_GENDERS[formData.gender].label}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div>

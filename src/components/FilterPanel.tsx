@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FilterState, AssetStatus, STATUS_CONFIG } from '@/types/asset'
+import { FilterState, AssetStatus, STATUS_CONFIG, GenderCategory } from '@/types/asset'
 
 interface FilterPanelProps {
   filters: FilterState
@@ -45,17 +45,22 @@ export default function FilterPanel({
     onFilterChange({ ...filters, tags: newTags })
   }
 
+  const handleGenderChange = (gender_category: GenderCategory | 'all') => {
+    onFilterChange({ ...filters, gender_category })
+  }
+
   const clearFilters = () => {
     setSearchValue('')
     onFilterChange({
       campaign: '',
       status: 'all',
       tags: [],
-      search: ''
+      search: '',
+      gender_category: 'all'
     })
   }
 
-  const hasActiveFilters = filters.campaign || filters.status !== 'all' || filters.tags.length > 0 || filters.search
+  const hasActiveFilters = filters.campaign || filters.status !== 'all' || filters.tags.length > 0 || filters.search || (filters.gender_category && filters.gender_category !== 'all')
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -215,6 +220,73 @@ export default function FilterPanel({
             </div>
           </div>
 
+          {/* Gender Category Filter */}
+          {filters.gender_category !== undefined && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Gender Category
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleGenderChange('all')}
+                  className={`
+                    px-4 py-2 rounded-lg border text-sm font-medium
+                    transition-all duration-200
+                    hover:scale-105
+                    ${(!filters.gender_category || filters.gender_category === 'all')
+                      ? 'bg-blue-600 text-white border-blue-600' 
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  All Genders
+                </button>
+                <button
+                  onClick={() => handleGenderChange('mens')}
+                  className={`
+                    px-4 py-2 rounded-lg border text-sm font-medium
+                    transition-all duration-200
+                    hover:scale-105
+                    ${filters.gender_category === 'mens'
+                      ? 'bg-blue-600 text-white border-blue-600' 
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  Men's
+                </button>
+                <button
+                  onClick={() => handleGenderChange('womens')}
+                  className={`
+                    px-4 py-2 rounded-lg border text-sm font-medium
+                    transition-all duration-200
+                    hover:scale-105
+                    ${filters.gender_category === 'womens'
+                      ? 'bg-blue-600 text-white border-blue-600' 
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  Women's
+                </button>
+                <button
+                  onClick={() => handleGenderChange('unisex')}
+                  className={`
+                    px-4 py-2 rounded-lg border text-sm font-medium
+                    transition-all duration-200
+                    hover:scale-105
+                    ${filters.gender_category === 'unisex'
+                      ? 'bg-blue-600 text-white border-blue-600' 
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  Unisex
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Tags Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -271,6 +343,11 @@ export default function FilterPanel({
                 {filters.search && (
                   <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
                     "{filters.search}"
+                  </span>
+                )}
+                {filters.gender_category && filters.gender_category !== 'all' && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-pink-100 text-pink-800">
+                    {filters.gender_category === 'mens' ? 'Men\'s' : filters.gender_category === 'womens' ? 'Women\'s' : 'Unisex'}
                   </span>
                 )}
               </div>

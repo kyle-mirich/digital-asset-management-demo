@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { ProductWithAssets, ProductCategory, PRODUCT_CATEGORIES } from '@/types/product'
+import { ProductWithAssets, ProductCategory, ProductGender, PRODUCT_CATEGORIES, PRODUCT_GENDERS } from '@/types/product'
 import ProductCard from '@/components/ProductCard'
 
 interface FilterState {
   category: ProductCategory | 'all'
+  gender: ProductGender | 'all'
   status: 'draft' | 'in_review' | 'approved' | 'archived' | 'all'
   search: string
 }
@@ -17,6 +18,7 @@ export default function Home() {
   const [filteredProducts, setFilteredProducts] = useState<ProductWithAssets[]>([])
   const [filters, setFilters] = useState<FilterState>({
     category: 'all',
+    gender: 'all',
     status: 'all',
     search: ''
   })
@@ -95,6 +97,11 @@ export default function Home() {
       filtered = filtered.filter(product => product.category === filters.category)
     }
 
+    // Gender filter
+    if (filters.gender !== 'all') {
+      filtered = filtered.filter(product => product.gender === filters.gender)
+    }
+
     // Status filter
     if (filters.status !== 'all') {
       filtered = filtered.filter(product => product.status === filters.status)
@@ -106,19 +113,73 @@ export default function Home() {
       filtered = filtered.filter(product => 
         product.name.toLowerCase().includes(searchTerm) ||
         product.description?.toLowerCase().includes(searchTerm) ||
-        product.category.toLowerCase().includes(searchTerm)
+        product.category.toLowerCase().includes(searchTerm) ||
+        product.gender.toLowerCase().includes(searchTerm)
       )
     }
 
     setFilteredProducts(filtered)
   }
 
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      // First, get all assets associated with this product to delete their files
+      const { data: assets, error: assetsError } = await supabase
+        .from('assets')
+        .select('file_url')
+        .eq('product_id', productId)
+
+      if (assetsError) {
+        console.error('Error fetching product assets:', assetsError)
+      } else if (assets) {
+        // Delete files from storage
+        for (const asset of assets) {
+          const fileName = asset.file_url.split('/').pop()
+          if (fileName) {
+            await supabase.storage
+              .from('assets')
+              .remove([fileName])
+          }
+        }
+      }
+
+      // Delete all assets associated with the product
+      const { error: deleteAssetsError } = await supabase
+        .from('assets')
+        .delete()
+        .eq('product_id', productId)
+
+      if (deleteAssetsError) {
+        console.error('Error deleting product assets:', deleteAssetsError)
+      }
+
+      // Delete the product
+      const { error: deleteProductError } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId)
+
+      if (deleteProductError) {
+        console.error('Error deleting product:', deleteProductError)
+        alert('Failed to delete product. Please try again.')
+        return
+      }
+
+      // Remove from local state
+      setProducts(prev => prev.filter(p => p.id !== productId))
+      
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      alert('Failed to delete product. Please try again.')
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50" style={{ zoom: '0.9' }}>
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-12">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,239 +213,169 @@ export default function Home() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          {/* Total Products - Shows all products */}
+        {/* Overview Stats - Compact */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <button
-            onClick={() => setFilters({ category: 'all', status: 'all', search: '' })}
-            className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
+            onClick={() => setFilters({ category: 'all', gender: 'all', status: 'all', search: '' })}
+            className="group bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 text-left w-full relative overflow-hidden"
           >
-            <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">{products.length}</div>
+                <div className="p-1.5 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors duration-300">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
               </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">{products.length}</div>
-                <div className="text-sm text-gray-600">Total Products</div>
-              </div>
+              <div className="text-xs text-gray-600 group-hover:text-gray-700 transition-colors duration-300">All Products</div>
             </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
           
-          {/* Approved Products - Filters to approved status */}
           <button
             onClick={() => setFilters({ category: 'all', status: 'approved', search: '' })}
-            className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
+            className="group bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 text-left w-full relative overflow-hidden"
           >
-            <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-2xl font-bold text-green-600 group-hover:text-green-700 transition-colors duration-300">
                   {products.filter(p => p.status === 'approved').length}
                 </div>
-                <div className="text-sm text-gray-600">Approved Products</div>
+                <div className="p-1.5 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors duration-300">
+                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
               </div>
+              <div className="text-xs text-gray-600 group-hover:text-gray-700 transition-colors duration-300">Approved</div>
             </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
           
-          {/* Total Assets - Shows all products (since assets are within products) */}
-          <button
-            onClick={() => setFilters({ category: 'all', status: 'all', search: '' })}
-            className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
+          <Link
+            href="/assets"
+            className="group bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 text-left w-full relative overflow-hidden block"
           >
-            <div className="flex items-center">
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-2xl font-bold text-blue-600 group-hover:text-blue-700 transition-colors duration-300">{totalAssets}</div>
+                <div className="p-1.5 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors duration-300">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
               </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">{totalAssets}</div>
-                <div className="text-sm text-gray-600">Total Assets</div>
-                <div className="text-xs text-gray-500 mt-1">Click to view all products</div>
-              </div>
+              <div className="text-xs text-gray-600 group-hover:text-gray-700 transition-colors duration-300">Assets</div>
             </div>
-          </button>
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </Link>
           
-          {/* Categories - Shows category breakdown */}
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 relative group">
-            <div className="flex items-center">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 relative overflow-hidden">
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-2xl font-bold text-purple-600">
+                {new Set(products.map(p => p.category)).size}
+              </div>
+              <div className="p-1.5 bg-purple-100 rounded-lg">
+                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
               </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">
-                  {Object.keys(PRODUCT_CATEGORIES).length}
-                </div>
-                <div className="text-sm text-gray-600">Categories</div>
-                <div className="text-xs text-gray-500 mt-1">Click category below</div>
-              </div>
             </div>
-            
-            {/* Category dropdown on hover */}
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-              <div className="p-2">
-                {Object.entries(PRODUCT_CATEGORIES).map(([key, config]) => {
-                  const categoryCount = products.filter(p => p.category === key).length
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => setFilters({ category: key as ProductCategory, status: 'all', search: '' })}
-                      className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between"
-                    >
-                      <span className="flex items-center">
-                        <span className="text-lg mr-2">{config.icon}</span>
-                        <span className="text-sm font-medium text-gray-900">{config.label}</span>
-                      </span>
-                      <span className="text-sm text-gray-500">{categoryCount}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+            <div className="text-xs text-gray-600">Categories</div>
           </div>
         </div>
 
-        {/* Status Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {/* Draft Products */}
-          <button
-            onClick={() => setFilters({ category: 'all', status: 'draft', search: '' })}
-            className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-lg font-bold text-gray-900">
-                  {products.filter(p => p.status === 'draft').length}
-                </div>
-                <div className="text-sm text-gray-600">📝 Draft</div>
-              </div>
-              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                <span className="text-lg">📝</span>
-              </div>
-            </div>
-          </button>
-
-          {/* In Review Products */}
-          <button
-            onClick={() => setFilters({ category: 'all', status: 'in_review', search: '' })}
-            className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-lg font-bold text-gray-900">
-                  {products.filter(p => p.status === 'in_review').length}
-                </div>
-                <div className="text-sm text-gray-600">🔍 In Review</div>
-              </div>
-              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <span className="text-lg">🔍</span>
-              </div>
-            </div>
-          </button>
-
-          {/* Approved Products */}
-          <button
-            onClick={() => setFilters({ category: 'all', status: 'approved', search: '' })}
-            className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-lg font-bold text-gray-900">
-                  {products.filter(p => p.status === 'approved').length}
-                </div>
-                <div className="text-sm text-gray-600">✅ Approved</div>
-              </div>
-              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                <span className="text-lg">✅</span>
-              </div>
-            </div>
-          </button>
-
-          {/* Archived Products */}
-          <button
-            onClick={() => setFilters({ category: 'all', status: 'archived', search: '' })}
-            className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 hover:bg-white/80 hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-left w-full"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-lg font-bold text-gray-900">
-                  {products.filter(p => p.status === 'archived').length}
-                </div>
-                <div className="text-sm text-gray-600">📦 Archived</div>
-              </div>
-              <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
-                <span className="text-lg">📦</span>
-              </div>
-            </div>
-          </button>
-        </div>
-
-        {/* Filters */}
-        <div className="mb-8">
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Category Filter */}
-              <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
-                </label>
-                <select
-                  id="category"
-                  value={filters.category}
-                  onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value as ProductCategory | 'all' }))}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 bg-white"
-                >
-                  <option value="all">All Categories</option>
-                  {Object.entries(PRODUCT_CATEGORIES).map(([key, config]) => (
-                    <option key={key} value={key}>
-                      {config.icon} {config.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Status Filter */}
-              <div>
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                  Status
-                </label>
-                <select
-                  id="status"
-                  value={filters.status}
-                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value as any }))}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 bg-white"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="draft">📝 Draft</option>
-                  <option value="in_review">🔍 In Review</option>
-                  <option value="approved">✅ Approved</option>
-                  <option value="archived">📦 Archived</option>
-                </select>
-              </div>
-
-              {/* Search */}
-              <div>
-                <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-                  Search
-                </label>
+        {/* Compact Filter Bar */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-lg border border-gray-200/50 p-3 mb-6">
+          <div className="flex flex-col lg:flex-row gap-3">
+            {/* Search */}
+            <div className="flex-1">
+              <div className="relative">
+                <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
                 <input
-                  id="search"
                   type="text"
                   value={filters.search}
                   onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                   placeholder="Search products..."
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 bg-white placeholder-gray-500"
+                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 bg-white/80 placeholder-gray-400 text-sm"
                 />
               </div>
             </div>
+
+            {/* Compact Status Filter Pills */}
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, status: 'all' }))}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                  filters.status === 'all' 
+                    ? 'bg-blue-500 text-white shadow-md' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, status: 'draft' }))}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                  filters.status === 'draft' 
+                    ? 'bg-gray-500 text-white shadow-md' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Draft ({products.filter(p => p.status === 'draft').length})
+              </button>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, status: 'in_review' }))}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                  filters.status === 'in_review' 
+                    ? 'bg-yellow-500 text-white shadow-md' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Review ({products.filter(p => p.status === 'in_review').length})
+              </button>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, status: 'approved' }))}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                  filters.status === 'approved' 
+                    ? 'bg-green-500 text-white shadow-md' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Approved ({products.filter(p => p.status === 'approved').length})
+              </button>
+            </div>
+
+            {/* Compact Category Dropdown */}
+            <select
+              value={filters.category}
+              onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value as ProductCategory | 'all' }))}
+              className="px-2.5 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 bg-white/80 min-w-[140px] text-sm"
+            >
+              <option value="all">All Categories</option>
+              {Object.entries(PRODUCT_CATEGORIES).map(([key, config]) => (
+                <option key={key} value={key}>
+                  {config.label}
+                </option>
+              ))}
+            </select>
+
+            {/* Compact Gender Dropdown */}
+            <select
+              value={filters.gender}
+              onChange={(e) => setFilters(prev => ({ ...prev, gender: e.target.value as ProductGender | 'all' }))}
+              className="px-2.5 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 bg-white/80 min-w-[120px] text-sm"
+            >
+              <option value="all">All Genders</option>
+              {Object.entries(PRODUCT_GENDERS).map(([key, config]) => (
+                <option key={key} value={key}>
+                  {config.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -393,7 +384,7 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">
               {filteredProducts.length} Products
-              {filters.status !== 'all' || filters.category !== 'all' || filters.search ? ' (filtered)' : ''}
+              {filters.status !== 'all' || filters.category !== 'all' || filters.gender !== 'all' || filters.search ? ' (filtered)' : ''}
             </h2>
           </div>
         </div>
@@ -444,7 +435,7 @@ export default function Home() {
             <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
             <p className="text-gray-500 mb-4">Try adjusting your filters or search terms</p>
             <button
-              onClick={() => setFilters({ category: 'all', status: 'all', search: '' })}
+              onClick={() => setFilters({ category: 'all', gender: 'all', status: 'all', search: '' })}
               className="
                 inline-flex items-center px-4 py-2 rounded-lg
                 bg-gray-100 text-gray-700 hover:bg-gray-200

@@ -19,6 +19,8 @@ export default function ProductDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -128,6 +130,65 @@ export default function ProductDetailPage() {
       alert(`Failed to update product status: ${error}`)
     } finally {
       setIsUpdatingStatus(false)
+    }
+  }
+
+  const handleDeleteProduct = async () => {
+    if (!product) return
+    
+    setIsDeleting(true)
+    try {
+      // First, get all assets associated with this product to delete their files
+      const { data: productAssets, error: assetsError } = await supabase
+        .from('assets')
+        .select('file_url')
+        .eq('product_id', product.id)
+
+      if (assetsError) {
+        console.error('Error fetching product assets:', assetsError)
+      } else if (productAssets) {
+        // Delete files from storage
+        for (const asset of productAssets) {
+          const fileName = asset.file_url.split('/').pop()
+          if (fileName) {
+            await supabase.storage
+              .from('assets')
+              .remove([fileName])
+          }
+        }
+      }
+
+      // Delete all assets associated with the product
+      const { error: deleteAssetsError } = await supabase
+        .from('assets')
+        .delete()
+        .eq('product_id', product.id)
+
+      if (deleteAssetsError) {
+        console.error('Error deleting product assets:', deleteAssetsError)
+      }
+
+      // Delete the product
+      const { error: deleteProductError } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', product.id)
+
+      if (deleteProductError) {
+        console.error('Error deleting product:', deleteProductError)
+        alert('Failed to delete product. Please try again.')
+        return
+      }
+
+      // Redirect to home page
+      router.push('/')
+      
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      alert('Failed to delete product. Please try again.')
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteConfirm(false)
     }
   }
 
@@ -288,6 +349,22 @@ export default function ProductDetailPage() {
                 </svg>
                 Add Assets
               </Link>
+              
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="
+                  inline-flex items-center px-4 py-2 rounded-lg
+                  bg-gradient-to-r from-red-600 to-red-700 text-white font-medium
+                  hover:from-red-700 hover:to-red-800 
+                  transform hover:scale-105 transition-all duration-200
+                  shadow-lg hover:shadow-xl
+                "
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete Product
+              </button>
             </div>
           </div>
         </div>
@@ -480,6 +557,71 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 transform transition-all duration-300 scale-100">
+            <div className="flex items-center mb-4">
+              <div className="p-3 bg-red-100 rounded-full mr-4">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Product</h3>
+                <p className="text-sm text-gray-600">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-sm text-gray-700 mb-2">
+                Are you sure you want to delete <strong>{product.name}</strong>?
+              </p>
+              <p className="text-xs text-gray-500">
+                This will permanently remove the product and all {assets.length} associated assets from your library.
+              </p>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="
+                  flex-1 px-4 py-2 rounded-lg
+                  bg-gray-100 text-gray-700 hover:bg-gray-200
+                  transition-all duration-200
+                  hover:scale-105
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                "
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProduct}
+                disabled={isDeleting}
+                className="
+                  flex-1 px-4 py-2 rounded-lg
+                  bg-gradient-to-r from-red-600 to-red-700 text-white font-medium
+                  hover:from-red-700 hover:to-red-800 
+                  transform hover:scale-105 transition-all duration-200
+                  shadow-lg hover:shadow-xl
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                "
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  'Yes, Delete Product'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

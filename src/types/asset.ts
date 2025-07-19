@@ -1,4 +1,5 @@
 export type AssetStatus = 'draft' | 'in_review' | 'approved' | 'archived'
+export type GenderCategory = 'mens' | 'womens' | 'unisex'
 
 export interface Asset {
   id: string
@@ -15,6 +16,7 @@ export interface Asset {
   tags: string[]
   qc_passed: boolean
   notes?: string
+  gender_category: GenderCategory
   created_at: string
   updated_at: string
 }
@@ -27,6 +29,7 @@ export interface AssetUpload {
   campaign?: string
   tags: string[]
   notes?: string
+  gender_category?: GenderCategory
 }
 
 export interface AssetUpdate {
@@ -36,6 +39,7 @@ export interface AssetUpdate {
   status?: AssetStatus
   qc_passed?: boolean
   notes?: string
+  gender_category?: GenderCategory
 }
 
 export interface QCChecklistItem {
@@ -50,6 +54,7 @@ export interface FilterState {
   status: AssetStatus | 'all'
   tags: string[]
   search: string
+  gender_category?: GenderCategory | 'all'
 }
 
 export interface UploadProgress {

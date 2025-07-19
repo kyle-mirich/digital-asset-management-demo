@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { uploadFile, supabase } from '@/lib/supabase'
-import { AssetUpload, UploadProgress, FILE_TYPES } from '@/types/asset'
+import { AssetUpload, UploadProgress, FILE_TYPES, GenderCategory } from '@/types/asset'
 
 interface UploadFormProps {
   onUploadComplete?: (assetId: string) => void
@@ -13,6 +13,7 @@ interface FileWithMetadata extends UploadProgress {
   campaign: string
   tags: string
   notes: string
+  gender_category: GenderCategory
 }
 
 export default function UploadForm({ onUploadComplete, productId }: UploadFormProps) {
@@ -96,7 +97,8 @@ export default function UploadForm({ onUploadComplete, productId }: UploadFormPr
         previewUrl,
         campaign: '',
         tags: '',
-        notes: ''
+        notes: '',
+        gender_category: 'unisex' as GenderCategory
       }
     })
 
@@ -156,7 +158,8 @@ export default function UploadForm({ onUploadComplete, productId }: UploadFormPr
         product_id: productId || undefined,
         campaign: campaign || undefined,
         tags: tags ? tags.split(',').map(t => t.trim()).filter(t => t) : [],
-        notes: notes || undefined
+        notes: notes || undefined,
+        gender_category: 'unisex'
       }
 
       const { data: asset, error: dbError } = await supabase
@@ -228,7 +231,7 @@ export default function UploadForm({ onUploadComplete, productId }: UploadFormPr
   }
 
   const uploadFileWithMetadata = async (fileData: FileWithMetadata) => {
-    const { file, campaign, tags, notes } = fileData
+    const { file, campaign, tags, notes, gender_category } = fileData
     if (!file) return
 
     try {
@@ -282,7 +285,8 @@ export default function UploadForm({ onUploadComplete, productId }: UploadFormPr
         product_id: productId || undefined,
         campaign: campaign || undefined,
         tags: tags ? tags.split(',').map(t => t.trim()).filter(t => t) : [],
-        notes: notes || undefined
+        notes: notes || undefined,
+        gender_category: gender_category || 'unisex'
       }
 
       const { data: asset, error: dbError } = await supabase
@@ -469,7 +473,7 @@ export default function UploadForm({ onUploadComplete, productId }: UploadFormPr
                 </div>
                 
                 {/* Metadata Forms */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Campaign
@@ -504,6 +508,26 @@ export default function UploadForm({ onUploadComplete, productId }: UploadFormPr
                         text-gray-900 bg-white placeholder-gray-500
                       "
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Gender Category
+                    </label>
+                    <select
+                      value={file.gender_category}
+                      onChange={(e) => updateFileMetadata(file.filename, 'gender_category', e.target.value as GenderCategory)}
+                      className="
+                        w-full px-3 py-2 rounded-lg border border-gray-300 
+                        focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                        transition-all duration-200 hover:border-gray-400
+                        text-gray-900 bg-white
+                      "
+                    >
+                      <option value="unisex">Unisex</option>
+                      <option value="mens">Men's</option>
+                      <option value="womens">Women's</option>
+                    </select>
                   </div>
                 </div>
                 
