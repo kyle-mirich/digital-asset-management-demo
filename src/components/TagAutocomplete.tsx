@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Tag, TagSuggestion } from '@/types/product'
+import { TagSuggestion } from '@/types/product'
 
 interface TagAutocompleteProps {
   value: string[]
@@ -217,7 +217,7 @@ export default function TagAutocomplete({
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                Create "<strong>{inputValue}</strong>"
+                Create &quot;<strong>{inputValue}</strong>&quot;
               </span>
             </button>
           )}

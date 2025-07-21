@@ -114,3 +114,6 @@ export const FILE_TYPES = {
 } as const
 
 export type FileType = keyof typeof FILE_TYPES
+export type ImageExtension = typeof FILE_TYPES.image.extensions[number]
+export type VideoExtension = typeof FILE_TYPES.video.extensions[number]
+export type AllowedExtension = ImageExtension | VideoExtension

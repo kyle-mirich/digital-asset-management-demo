@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { AssetChecklistItem } from '@/types/product'
 
@@ -14,19 +14,7 @@ export default function AssetChecklist({ assetId, onChecklistUpdate }: AssetChec
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchChecklistItems()
-  }, [assetId])
-
-  useEffect(() => {
-    if (onChecklistUpdate && checklistItems.length > 0) {
-      const totalRequired = checklistItems.filter(item => item.is_required).length
-      const completedRequired = checklistItems.filter(item => item.is_required && item.is_completed).length
-      onChecklistUpdate(completedRequired, totalRequired)
-    }
-  }, [checklistItems, onChecklistUpdate])
-
-  const fetchChecklistItems = async () => {
+  const fetchChecklistItems = useCallback(async () => {
     try {
       setIsLoading(true)
       const { data, error } = await supabase
@@ -46,7 +34,19 @@ export default function AssetChecklist({ assetId, onChecklistUpdate }: AssetChec
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [assetId])
+
+  useEffect(() => {
+    fetchChecklistItems()
+  }, [assetId, fetchChecklistItems])
+
+  useEffect(() => {
+    if (onChecklistUpdate && checklistItems.length > 0) {
+      const totalRequired = checklistItems.filter(item => item.is_required).length
+      const completedRequired = checklistItems.filter(item => item.is_required && item.is_completed).length
+      onChecklistUpdate(completedRequired, totalRequired)
+    }
+  }, [checklistItems, onChecklistUpdate])
 
   const toggleChecklistItem = async (itemId: string, isCompleted: boolean) => {
     setIsUpdating(itemId)

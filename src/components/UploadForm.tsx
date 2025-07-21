@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { uploadFile, supabase } from '@/lib/supabase'
+import Image from 'next/image'
+import { supabase } from '@/lib/supabase'
 import { AssetUpload, UploadProgress, FILE_TYPES, GenderCategory } from '@/types/asset'
 
 interface UploadFormProps {
@@ -56,8 +57,8 @@ export default function UploadForm({ onUploadComplete, productId }: UploadFormPr
       return { valid: false, error: 'Invalid file type' }
     }
 
-    const isImage = FILE_TYPES.image.extensions.includes(fileExtension)
-    const isVideo = FILE_TYPES.video.extensions.includes(fileExtension)
+    const isImage = (FILE_TYPES.image.extensions as readonly string[]).includes(fileExtension)
+    const isVideo = (FILE_TYPES.video.extensions as readonly string[]).includes(fileExtension)
 
     if (!isImage && !isVideo) {
       return { valid: false, error: 'Only image and video files are allowed' }
@@ -105,96 +106,40 @@ export default function UploadForm({ onUploadComplete, productId }: UploadFormPr
     setPendingFiles(prev => [...prev, ...newPendingFiles])
   }
 
-  const uploadFile = async (file: File) => {
-    try {
-      // Update progress to uploading
-      setUploads(prev => prev.map(upload => 
-        upload.filename === file.name 
-          ? { ...upload, status: 'uploading' as const, progress: 10 }
-          : upload
-      ))
+  // const uploadFile = async (file: File) => {
+  //   try {
+  //     // Update progress to uploading
+  //     setUploads(prev => prev.map(upload => 
+  //       upload.filename === file.name 
+  //         ? { ...upload, status: 'uploading' as const, progress: 10 }
+  //         : upload
+  //     ))
 
-      // Generate unique filename
-      const timestamp = Date.now()
-      const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-      const fileName = `${timestamp}_${cleanName}`
+  //     // Generate unique filename
+  //     const timestamp = Date.now()
+  //     const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+  //     const fileName = `${timestamp}_${cleanName}`
 
-      // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('assets')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        })
+  //     // Upload to Supabase Storage
+  //     const { data: uploadData, error: uploadError } = await supabase.storage
+  //       .from('assets')
+  //       .upload(fileName, file, {
+  //         cacheControl: '3600',
+  //         upsert: false
+  //       })
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError)
+  //     if (uploadError) {
+  //       console.error('Upload error:', uploadError)
         
-        // If bucket doesn't exist, try to create it
-        if (uploadError.message?.includes('Bucket not found')) {
-          throw new Error('Storage bucket "assets" not found. Please create it in your Supabase dashboard under Storage → Create bucket → Name: "assets" → Public: true')
-        }
+  //       // If bucket doesn't exist, try to create it
+  //       if (uploadError.message?.includes('Bucket not found')) {
+  //         throw new Error('Storage bucket "assets" not found. Please create it in your Supabase dashboard under Storage → Create bucket → Name: "assets" → Public: true')
+  //       }
         
-        throw new Error(uploadError.message || 'Upload failed')
-      }
+  //       throw new Error(uploadError.message || 'Upload failed')
+  //     }
 
-      // Update progress
-      setUploads(prev => prev.map(upload => 
-        upload.filename === file.name 
-          ? { ...upload, progress: 70, status: 'processing' as const }
-          : upload
-      ))
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('assets')
-        .getPublicUrl(fileName)
-
-      // Create asset record in database
-      const assetData: AssetUpload = {
-        filename: file.name,
-        filetype: file.type,
-        filesize: file.size,
-        product_id: productId || undefined,
-        campaign: campaign || undefined,
-        tags: tags ? tags.split(',').map(t => t.trim()).filter(t => t) : [],
-        notes: notes || undefined,
-        gender_category: 'unisex'
-      }
-
-      const { data: asset, error: dbError } = await supabase
-        .from('assets')
-        .insert({
-          ...assetData,
-          file_url: publicUrl
-        })
-        .select()
-        .single()
-
-      if (dbError) throw dbError
-
-      // Update progress to complete with asset ID
-      setUploads(prev => prev.map(upload => 
-        upload.filename === file.name 
-          ? { ...upload, progress: 100, status: 'complete' as const, assetId: asset.id }
-          : upload
-      ))
-
-      // Call completion callback
-      if (onUploadComplete && asset) {
-        onUploadComplete(asset.id)
-      }
-
-    } catch (error) {
-      console.error('Upload failed:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed'
-      setUploads(prev => prev.map(upload => 
-        upload.filename === file.name 
-          ? { ...upload, status: 'error' as const, error: errorMessage }
-          : upload
-      ))
-    }
-  }
 
   const updateFileMetadata = (filename: string, field: keyof FileWithMetadata, value: string) => {
     setPendingFiles(prev => prev.map(file => 
@@ -248,7 +193,7 @@ export default function UploadForm({ onUploadComplete, productId }: UploadFormPr
       const fileName = `${timestamp}_${cleanName}`
 
       // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('assets')
         .upload(fileName, file, {
           cacheControl: '3600',
@@ -429,10 +374,11 @@ export default function UploadForm({ onUploadComplete, productId }: UploadFormPr
                   {/* Preview */}
                   <div className="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-gray-100">
                     {file.previewUrl ? (
-                      <img
+                      <Image
                         src={file.previewUrl}
                         alt={file.filename}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                     ) : file.file?.type.startsWith('video/') ? (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-600 to-gray-800">
@@ -525,8 +471,8 @@ export default function UploadForm({ onUploadComplete, productId }: UploadFormPr
                       "
                     >
                       <option value="unisex">Unisex</option>
-                      <option value="mens">Men's</option>
-                      <option value="womens">Women's</option>
+                      <option value="mens">Men&apos;s</option>
+                      <option value="womens">Women&apos;s</option>
                     </select>
                   </div>
                 </div>
@@ -585,10 +531,11 @@ export default function UploadForm({ onUploadComplete, productId }: UploadFormPr
                 {/* Preview Area */}
                 <div className="aspect-video bg-gray-100 relative">
                   {upload.previewUrl ? (
-                    <img
+                    <Image
                       src={upload.previewUrl}
                       alt={upload.filename}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                   ) : upload.file?.type.startsWith('video/') ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-600 to-gray-800">

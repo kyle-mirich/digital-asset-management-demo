@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { QCChecklistItem } from '@/types/asset'
 
 interface QCChecklistProps {
-  assetId: string
+  assetId?: string
   items?: QCChecklistItem[]
   onComplete?: (passed: boolean) => void
   disabled?: boolean
@@ -56,7 +56,6 @@ const defaultQCItems: QCChecklistItem[] = [
 ]
 
 export default function QCChecklist({ 
-  assetId, 
   items = defaultQCItems, 
   onComplete,
   disabled = false 
@@ -78,7 +77,7 @@ export default function QCChecklist({
   const requiredItems = checklistItems.filter(item => item.required)
   const requiredChecked = requiredItems.filter(item => item.checked)
   const optionalItems = checklistItems.filter(item => !item.required)
-  const optionalChecked = optionalItems.filter(item => item.checked)
+  // const optionalChecked = optionalItems.filter(item => item.checked)
 
   const allRequiredPassed = requiredItems.length === requiredChecked.length
   const progressPercentage = Math.round((requiredChecked.length / requiredItems.length) * 100)

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Asset, STATUS_CONFIG } from '@/types/asset'
-import { formatDistanceToNow } from 'date-fns'
+// import { formatDistanceToNow } from 'date-fns'
 
 interface AssetCardProps {
   asset: Asset
@@ -12,18 +12,18 @@ interface AssetCardProps {
   priority?: boolean
 }
 
-export default function AssetCard({ asset, onStatusChange, priority = false }: AssetCardProps) {
+export default function AssetCard({ asset, priority = false }: AssetCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageFailed, setImageFailed] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-  }
+  // const formatFileSize = (bytes: number) => {
+  //   if (bytes === 0) return '0 Bytes'
+  //   const k = 1024
+  //   const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  //   const i = Math.floor(Math.log(bytes) / Math.log(k))
+  //   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+  // }
 
   const isVideo = asset.filetype.startsWith('video/')
   const isImage = asset.filetype.startsWith('image/')
@@ -169,7 +169,7 @@ export default function AssetCard({ asset, onStatusChange, priority = false }: A
           
           {asset.gender_category && (
             <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
-              {asset.gender_category === 'mens' ? 'Men\'s' : asset.gender_category === 'womens' ? 'Women\'s' : 'Unisex'}
+              {asset.gender_category === 'mens' ? 'Men&apos;s' : asset.gender_category === 'womens' ? 'Women&apos;s' : 'Unisex'}
             </span>
           )}
         </div>

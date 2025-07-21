@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -15,17 +15,11 @@ export default function EditProductPage() {
   const [formData, setFormData] = useState<ProductUpdate>({
     name: '',
     description: '',
-    category: 'shirt',
+    category: 'tops',
     status: 'draft'
   })
 
-  useEffect(() => {
-    if (params.id) {
-      fetchProduct(params.id as string)
-    }
-  }, [params.id])
-
-  const fetchProduct = async (productId: string) => {
+  const fetchProduct = useCallback(async (productId: string) => {
     try {
       setIsLoading(true)
       const { data, error } = await supabase
@@ -53,9 +47,15 @@ export default function EditProductPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [router])
 
-  const handleInputChange = (field: keyof ProductUpdate, value: any) => {
+  useEffect(() => {
+    if (params.id) {
+      fetchProduct(params.id as string)
+    }
+  }, [params.id, fetchProduct])
+
+  const handleInputChange = (field: keyof ProductUpdate, value: string | ProductCategory) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -66,7 +66,7 @@ export default function EditProductPage() {
     setIsSubmitting(true)
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('products')
         .update({
           ...formData,
@@ -247,7 +247,7 @@ export default function EditProductPage() {
                   name="status"
                   value="draft"
                   checked={formData.status === 'draft'}
-                  onChange={(e) => handleInputChange('status', e.target.value as any)}
+                  onChange={(e) => handleInputChange('status', e.target.value as 'draft' | 'in_review' | 'approved' | 'archived')}
                   className="sr-only"
                 />
                 <div className="text-2xl mb-2">📝</div>
@@ -268,7 +268,7 @@ export default function EditProductPage() {
                   name="status"
                   value="in_review"
                   checked={formData.status === 'in_review'}
-                  onChange={(e) => handleInputChange('status', e.target.value as any)}
+                  onChange={(e) => handleInputChange('status', e.target.value as 'draft' | 'in_review' | 'approved' | 'archived')}
                   className="sr-only"
                 />
                 <div className="text-2xl mb-2">🔍</div>
@@ -289,7 +289,7 @@ export default function EditProductPage() {
                   name="status"
                   value="approved"
                   checked={formData.status === 'approved'}
-                  onChange={(e) => handleInputChange('status', e.target.value as any)}
+                  onChange={(e) => handleInputChange('status', e.target.value as 'draft' | 'in_review' | 'approved' | 'archived')}
                   className="sr-only"
                 />
                 <div className="text-2xl mb-2">✅</div>
@@ -310,7 +310,7 @@ export default function EditProductPage() {
                   name="status"
                   value="archived"
                   checked={formData.status === 'archived'}
-                  onChange={(e) => handleInputChange('status', e.target.value as any)}
+                  onChange={(e) => handleInputChange('status', e.target.value as 'draft' | 'in_review' | 'approved' | 'archived')}
                   className="sr-only"
                 />
                 <div className="text-2xl mb-2">📦</div>

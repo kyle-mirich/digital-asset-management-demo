@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
+// import Link from 'next/link'
 import Image from 'next/image'
-import { formatDistanceToNow } from 'date-fns'
+// import { formatDistanceToNow } from 'date-fns'
 import { ProductWithAssets, PRODUCT_STATUS_CONFIG, PRODUCT_CATEGORIES, PRODUCT_GENDERS } from '@/types/product'
 
 interface ProductCardProps {
@@ -12,7 +12,7 @@ interface ProductCardProps {
   priority?: boolean
 }
 
-export default function ProductCard({ product, onStatusChange, priority = false }: ProductCardProps) {
+export default function ProductCard({ product, priority = false }: ProductCardProps) {
   const [isImageLoaded, setIsImageLoaded] = useState(false)
   
   const statusConfig = PRODUCT_STATUS_CONFIG[product.status] || PRODUCT_STATUS_CONFIG.draft

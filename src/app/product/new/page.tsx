@@ -17,7 +17,7 @@ export default function NewProductPage() {
     status: 'draft'
   })
 
-  const handleInputChange = (field: keyof ProductCreate, value: any) => {
+  const handleInputChange = (field: keyof ProductCreate, value: string | ProductCategory | ProductGender) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -224,7 +224,7 @@ export default function NewProductPage() {
                   name="status"
                   value="draft"
                   checked={formData.status === 'draft'}
-                  onChange={(e) => handleInputChange('status', e.target.value as any)}
+                  onChange={(e) => handleInputChange('status', e.target.value as 'draft' | 'in_review' | 'approved' | 'archived')}
                   className="sr-only"
                 />
                 <div className="text-2xl mb-2">📝</div>
@@ -245,7 +245,7 @@ export default function NewProductPage() {
                   name="status"
                   value="in_review"
                   checked={formData.status === 'in_review'}
-                  onChange={(e) => handleInputChange('status', e.target.value as any)}
+                  onChange={(e) => handleInputChange('status', e.target.value as 'draft' | 'in_review' | 'approved' | 'archived')}
                   className="sr-only"
                 />
                 <div className="text-2xl mb-2">🔍</div>
@@ -266,7 +266,7 @@ export default function NewProductPage() {
                   name="status"
                   value="approved"
                   checked={formData.status === 'approved'}
-                  onChange={(e) => handleInputChange('status', e.target.value as any)}
+                  onChange={(e) => handleInputChange('status', e.target.value as 'draft' | 'in_review' | 'approved' | 'archived')}
                   className="sr-only"
                 />
                 <div className="text-2xl mb-2">✅</div>
@@ -287,7 +287,7 @@ export default function NewProductPage() {
                   name="status"
                   value="archived"
                   checked={formData.status === 'archived'}
-                  onChange={(e) => handleInputChange('status', e.target.value as any)}
+                  onChange={(e) => handleInputChange('status', e.target.value as 'draft' | 'in_review' | 'approved' | 'archived')}
                   className="sr-only"
                 />
                 <div className="text-2xl mb-2">📦</div>

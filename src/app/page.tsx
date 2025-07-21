@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { ProductWithAssets, ProductCategory, ProductGender, PRODUCT_CATEGORIES, PRODUCT_GENDERS } from '@/types/product'
@@ -29,11 +29,6 @@ export default function Home() {
   useEffect(() => {
     fetchProducts()
   }, [])
-
-  // Apply filters whenever filters or products change
-  useEffect(() => {
-    applyFilters()
-  }, [filters, products])
 
   const fetchProducts = async () => {
     try {
@@ -89,7 +84,7 @@ export default function Home() {
     }
   }
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...products]
 
     // Category filter
@@ -119,60 +114,12 @@ export default function Home() {
     }
 
     setFilteredProducts(filtered)
-  }
+  }, [products, filters])
 
-  const handleDeleteProduct = async (productId: string) => {
-    try {
-      // First, get all assets associated with this product to delete their files
-      const { data: assets, error: assetsError } = await supabase
-        .from('assets')
-        .select('file_url')
-        .eq('product_id', productId)
-
-      if (assetsError) {
-        console.error('Error fetching product assets:', assetsError)
-      } else if (assets) {
-        // Delete files from storage
-        for (const asset of assets) {
-          const fileName = asset.file_url.split('/').pop()
-          if (fileName) {
-            await supabase.storage
-              .from('assets')
-              .remove([fileName])
-          }
-        }
-      }
-
-      // Delete all assets associated with the product
-      const { error: deleteAssetsError } = await supabase
-        .from('assets')
-        .delete()
-        .eq('product_id', productId)
-
-      if (deleteAssetsError) {
-        console.error('Error deleting product assets:', deleteAssetsError)
-      }
-
-      // Delete the product
-      const { error: deleteProductError } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId)
-
-      if (deleteProductError) {
-        console.error('Error deleting product:', deleteProductError)
-        alert('Failed to delete product. Please try again.')
-        return
-      }
-
-      // Remove from local state
-      setProducts(prev => prev.filter(p => p.id !== productId))
-      
-    } catch (error) {
-      console.error('Error deleting product:', error)
-      alert('Failed to delete product. Please try again.')
-    }
-  }
+  // Apply filters whenever filters or products change
+  useEffect(() => {
+    applyFilters()
+  }, [filters, products, applyFilters])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50" style={{ zoom: '0.9' }}>
@@ -234,7 +181,7 @@ export default function Home() {
           </button>
           
           <button
-            onClick={() => setFilters({ category: 'all', status: 'approved', search: '' })}
+            onClick={() => setFilters({ category: 'all', gender: 'all', status: 'approved', search: '' })}
             className="group bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-gray-200/50 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 text-left w-full relative overflow-hidden"
           >
             <div className="relative z-10">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -14,13 +14,7 @@ export default function ProductUploadPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [uploadedAssets, setUploadedAssets] = useState<string[]>([])
 
-  useEffect(() => {
-    if (params.id) {
-      fetchProduct(params.id as string)
-    }
-  }, [params.id])
-
-  const fetchProduct = async (productId: string) => {
+  const fetchProduct = useCallback(async (productId: string) => {
     try {
       setIsLoading(true)
       const { data, error } = await supabase
@@ -42,7 +36,13 @@ export default function ProductUploadPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    if (params.id) {
+      fetchProduct(params.id as string)
+    }
+  }, [params.id, fetchProduct])
 
   const handleUploadComplete = (assetId: string) => {
     setUploadedAssets(prev => [...prev, assetId])

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
@@ -37,10 +37,6 @@ export default function AssetsPage() {
     fetchAssets()
   }, [])
 
-  useEffect(() => {
-    applyFilters()
-  }, [filters, assets])
-
   const fetchAssets = async () => {
     try {
       setIsLoading(true)
@@ -70,7 +66,7 @@ export default function AssetsPage() {
     }
   }
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...assets]
 
     if (filters.status !== 'all') {
@@ -99,7 +95,11 @@ export default function AssetsPage() {
     }
 
     setFilteredAssets(filtered)
-  }
+  }, [assets, filters])
+
+  useEffect(() => {
+    applyFilters()
+  }, [filters, assets, applyFilters])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -231,7 +231,7 @@ export default function AssetsPage() {
             {/* File Type Filter */}
             <select
               value={filters.fileType}
-              onChange={(e) => setFilters(prev => ({ ...prev, fileType: e.target.value as any }))}
+              onChange={(e) => setFilters(prev => ({ ...prev, fileType: e.target.value as 'image' | 'video' | 'all' }))}
               className="px-3 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 bg-white/80 min-w-[120px]"
             >
               <option value="all">All Types</option>
@@ -246,8 +246,8 @@ export default function AssetsPage() {
               className="px-3 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 bg-white/80 min-w-[120px]"
             >
               <option value="all">All Genders</option>
-              <option value="mens">Men's</option>
-              <option value="womens">Women's</option>
+              <option value="mens">Men&apos;s</option>
+              <option value="womens">Women&apos;s</option>
               <option value="unisex">Unisex</option>
             </select>
           </div>
@@ -351,7 +351,7 @@ export default function AssetsPage() {
             <h3 className="text-lg font-medium text-gray-900 mb-2">No assets found</h3>
             <p className="text-gray-500 mb-4">Try adjusting your filters or search terms</p>
             <button
-              onClick={() => setFilters({ status: 'all', search: '', fileType: 'all' })}
+              onClick={() => setFilters({ status: 'all', search: '', fileType: 'all', gender_category: 'all' })}
               className="inline-flex items-center px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200"
             >
               Clear Filters

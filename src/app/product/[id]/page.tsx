@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { formatDistanceToNow } from 'date-fns'
+// import { formatDistanceToNow } from 'date-fns'
 import { supabase } from '@/lib/supabase'
-import { Product, PRODUCT_STATUS_CONFIG, PRODUCT_CATEGORIES, ProductStatus, PRODUCT_STATUS_TRANSITIONS } from '@/types/product'
+import { Product, PRODUCT_STATUS_CONFIG, PRODUCT_CATEGORIES, ProductStatus } from '@/types/product'
 import { Asset } from '@/types/asset'
 import AssetCard from '@/components/AssetCard'
 import ProductChecklist from '@/components/ProductChecklist'
@@ -301,7 +301,7 @@ export default function ProductDetailPage() {
                     <div className="py-1">
                       {Object.entries(PRODUCT_STATUS_CONFIG).map(([status, config]) => {
                         // For now, allow all transitions to fix any status issues
-                        const canTransition = true // We'll make this more restrictive later if needed
+                        // const canTransition = true // We'll make this more restrictive later if needed
                         
                         return (
                           <button

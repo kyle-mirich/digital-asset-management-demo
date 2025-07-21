@@ -28,7 +28,7 @@ export default function FilterPanel({
     }, 300)
     
     return () => clearTimeout(timer)
-  }, [searchValue])
+  }, [searchValue, filters, onFilterChange])
 
   const handleStatusChange = (status: AssetStatus | 'all') => {
     onFilterChange({ ...filters, status })
@@ -253,7 +253,7 @@ export default function FilterPanel({
                     }
                   `}
                 >
-                  Men's
+                  Men&apos;s
                 </button>
                 <button
                   onClick={() => handleGenderChange('womens')}
@@ -267,7 +267,7 @@ export default function FilterPanel({
                     }
                   `}
                 >
-                  Women's
+                  Women&apos;s
                 </button>
                 <button
                   onClick={() => handleGenderChange('unisex')}
@@ -342,12 +342,12 @@ export default function FilterPanel({
                 )}
                 {filters.search && (
                   <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
-                    "{filters.search}"
+                    &quot;{filters.search}&quot;
                   </span>
                 )}
                 {filters.gender_category && filters.gender_category !== 'all' && (
                   <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-pink-100 text-pink-800">
-                    {filters.gender_category === 'mens' ? 'Men\'s' : filters.gender_category === 'womens' ? 'Women\'s' : 'Unisex'}
+                    {filters.gender_category === 'mens' ? 'Men&apos;s' : filters.gender_category === 'womens' ? 'Women&apos;s' : 'Unisex'}
                   </span>
                 )}
               </div>

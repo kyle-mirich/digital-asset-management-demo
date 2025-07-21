@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const fileName = `${timestamp}_${cleanName}`
 
     // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('assets')
       .upload(fileName, file, {
         cacheControl: '3600',
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ data: asset }, { status: 201 })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

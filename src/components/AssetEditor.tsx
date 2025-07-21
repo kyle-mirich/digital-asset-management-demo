@@ -8,10 +8,10 @@ import TagAutocomplete from './TagAutocomplete'
 interface AssetEditorProps {
   asset: Asset
   onAssetUpdate: (updatedAsset: Asset) => void
-  onClose: () => void
+  onClose?: () => void
 }
 
-export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEditorProps) {
+export default function AssetEditor({ asset, onAssetUpdate }: AssetEditorProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState<AssetUpdate & { filename: string }>({
@@ -25,14 +25,14 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
   })
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
 
-  const handleInputChange = (field: keyof typeof formData, value: any) => {
+  const handleInputChange = (field: keyof typeof formData, value: string | string[] | AssetStatus | boolean | GenderCategory) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const updatedData: any = {
+      const updatedData = {
         filename: formData.filename.trim(),
         campaign: formData.campaign?.trim() || null,
         tags: formData.tags,
@@ -131,7 +131,7 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Gender Category</label>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
-              {asset.gender_category === 'mens' ? 'Men\'s' : asset.gender_category === 'womens' ? 'Women\'s' : 'Unisex'}
+              {asset.gender_category === 'mens' ? 'Men&apos;s' : asset.gender_category === 'womens' ? 'Women&apos;s' : 'Unisex'}
             </span>
           </div>
 
@@ -278,8 +278,8 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
             "
           >
             <option value="unisex">Unisex</option>
-            <option value="mens">Men's</option>
-            <option value="womens">Women's</option>
+            <option value="mens">Men&apos;s</option>
+            <option value="womens">Women&apos;s</option>
           </select>
         </div>
 
@@ -289,7 +289,7 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
             Tags
           </label>
           <TagAutocomplete
-            value={formData.tags}
+            value={formData.tags || []}
             onChange={(tags) => handleInputChange('tags', tags)}
             placeholder="Add tags to organize your assets..."
           />
@@ -313,9 +313,9 @@ export default function AssetEditor({ asset, onAssetUpdate, onClose }: AssetEdit
             >
               <span className={`
                 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                ${STATUS_CONFIG[formData.status].color}
+                ${STATUS_CONFIG[formData.status || 'draft'].color}
               `}>
-                {STATUS_CONFIG[formData.status].label}
+                {STATUS_CONFIG[formData.status || 'draft'].label}
               </span>
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
